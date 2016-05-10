@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title> Performance Viewer </title>
+
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <!-- Place favicon.ico in the root directory -->
+
+    <!-- build:css styles/vendor.css -->
+    <!-- bower:css -->
+    <link rel="stylesheet" href="/bower_components/datatables.net-dt/css/jquery.dataTables.css" />
+    <link rel="stylesheet" href="/bower_components/datatables.net-select-dt/css/select.dataTables.css" />
+    <link rel="stylesheet" href="/bower_components/jquery-ui/themes/base/jquery-ui.css" />
+    <link rel="stylesheet" href="/bower_components/jqueryui-timepicker-addon/dist/jquery-ui-timepicker-addon.css" />
+    <!-- endbower -->
+    <!-- endbuild -->
+
+    <!-- build:css styles/main.css -->
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- endbuild -->
+  </head>
+  <body>
+    <!--[if lt IE 10]>
+      <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+    <div id="vm" class="modal">
+      <div class="modal-body">
+        <div class="modal-title">
+          <tab1/>
+          Authentication
+        </div>
+        <div class="modal-content">
+          <div id="vForm">
+            <label class="label-uniform" for="lName">Username</label>
+            <input class="input-long" type="text" name="lName" id="lName" />
+            <br/>
+            <label class="label-uniform" for="lPass">Password</label>
+            <input class="input-long" type="password" name="lPass" id="lPass" />
+            <br/>
+            <button id="lButton">Log In</button>
+          </div>
+          <span id="vText" class="message"></span>
+        </div>
+      </div>
+    </div>
+    <div>
+			<div id="ssC" class="sContainer">
+				<span id="queryForm" name="queryForm">
+						<label for="username">User</label>
+						<input type="text" name="username" id="username" />
+						<tab2 />
+						<label for="deviceType">Device</label>
+						<select name="deviceType" id="deviceType">
+							<option value="0">All</option>
+							<option value="phone">Phone</option>
+							<option value="tablet">Tablet</option>
+						</select>
+						<tab2 />
+						<label for="platform">Platform</label>
+						<select name="platform" id="platform">
+							<option value="0">All</option>
+							<option value="8">iOS</option>
+							<option value="11">Android</option>
+						</select>
+						<tab2 />
+						<label for="startTime">Starting Time</label>
+						<input type="text" name="startTime" id="startTime" />
+						-
+						<input type="text" name="endTime" id="endTime" />
+						<tab2 />
+						<label for="buildType">Build Type</label>
+						<select name="buildType" id="buildType">
+							<option value="2">All</option>
+							<option value="1">Release</option>
+							<option value="0">Debug</option>
+						</select>
+						<tab2 />
+						<label for="room">Room</label>
+						<select name="room" id="room">
+							<option value="0" selected>All</option>
+						</select>
+						<tab2 />
+						<label for="buildVersion">Build Version</label>
+						<select name="buildVersion" id="buildVersion">
+							<option value="0" selected>All</option>
+							<option value="1.3">1.3</option>
+							<option value="1.2">1.2</option>
+							<option value="1.1">1.1</option>
+						</select>
+				</span>
+
+				<button id="searchButton" name="searchButton">Search</button>
+			</div>
+
+			<div class="tContainer">
+				<table id="results" class="display" cellspacing="0" width="100%">
+					<thead>
+		        <tr>
+		          <th>username</th>
+		          <th>device</th>
+							<th>platform</th>
+		          <th>startTime</th>
+		          <th>sessionId</th>
+		          <th>starting room</th>
+		          <th>buildType</th>
+		        </tr>
+		      </thead>
+					<tbody></tbody>
+				</table>
+				<span id="sa">
+					<b>Selected Aggregates</b><br/>
+					<tab4> Sessions Selected: <span id="saCount"></span> </tab4>
+					<tab4> FPS: <span id="saFps"></span> </tab4>
+					<tab4> Memory: <span id="saMem"></span> </tab4><br/>
+					<b>Search Aggregates</b><br/>
+					<tab4> Sessions Found: <span id="taCount"></span></tab4>
+					<tab4> FPS: <span id="taFps"></span></tab4>
+					<tab4> Memory: <span id="taMem"></span></tab4>
+				</span>
+			</div>
+			<div id="gc" class="gContainer">
+			</div>
+		</div>
+    <!-- build:js scripts/vendor.js -->
+    <!-- bower:js -->
+    <script src="/bower_components/jquery/dist/jquery.js"></script>
+    <script src="/bower_components/d3/d3.js"></script>
+    <script src="/bower_components/datatables.net/js/jquery.dataTables.js"></script>
+    <script src="/bower_components/datatables.net-select/js/dataTables.select.js"></script>
+    <script src="/bower_components/jquery-ui/jquery-ui.js"></script>
+    <script src="/bower_components/jqueryui-timepicker-addon/dist/jquery-ui-timepicker-addon.js"></script>
+    <script src="/bower_components/randomcolor/randomColor.js"></script>
+    <!-- endbower -->
+    <!-- endbuild -->
+
+    <!-- build:js scripts/main.js -->
+    <script src="scripts/main.js"></script>
+    <!-- endbuild -->
+  </body>
+</html>

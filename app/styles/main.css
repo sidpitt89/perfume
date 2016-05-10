@@ -1,0 +1,111 @@
+body {
+  background: #fafafa;
+  font: 12px sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333;
+}
+/*body {
+  font: 12px sans-serif;
+}*/
+div.tooltip {
+  position: absolute;
+  text-align: center;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+div.gContainer {
+  float: left;
+  width: 60%;
+}
+div.sContainer {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+div.tContainer {
+  float: left;
+  padding-top: 20px;
+  width: 40%;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.chart {
+  padding-left: 50px;
+  padding-top: 50px;
+}
+.input-long {
+  width: 250px;
+  margin-bottom: 10px;
+}
+.label-uniform {
+  width: 65px;
+  display: inline-block;
+}
+.legend {
+  padding-left: 50px;
+  padding-top: 20px;
+}
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+.message {
+  font: 12px sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333;
+}
+.error {
+  color: #FF5555;
+}
+.success {
+  color: #55FF55;
+}
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.8);
+}
+.modal-body {
+  background-color: #e0e0e0;
+  margin: 15% auto;
+  border: 1px solid #888;
+  width: 300px;
+}
+.modal-content {
+  padding: 20px;
+}
+.modal-title {
+  background-color: #999;
+  width: 100%;
+}
+tab1 {
+  padding-left: 1em;
+}
+tab2 {
+  padding-left: 2em;
+}
+tab4 {
+  padding-left: 4em;
+}
+
+.browserupgrade {
+  margin: 0.2em 0;
+  background: #ccc;
+  color: #000;
+  padding: 0.2em 0;
+}

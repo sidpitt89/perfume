@@ -1,0 +1,15 @@
+{
+  "name": "perfume",
+  "private": true,
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "d3": "^3.5.17",
+    "datatables.net": "^1.10.11",
+    "datatables.net-dt": "^1.10.11",
+    "datatables.net-select": "^1.1.2",
+    "datatables.net-select-dt": "^1.1.2",
+    "jquery-ui": "^1.11.4",
+    "jqueryui-timepicker-addon": "^1.6.3",
+    "randomcolor": "randomColor#^0.4.4"
+  }
+}
