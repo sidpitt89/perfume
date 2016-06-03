@@ -3,7 +3,6 @@
 const loginUrl = "http://localhost:3000/auth/logIn";
 const searchUrl = "http://localhost:3000/perf/search";
 const statsUrl = "http://localhost:3000/perf/getIntervalStats";
-const avgUrl = "http://localhost:3000/perf/sessionAverages";
 const roomUrl = "http://localhost:3000/perf/getRoomInfo";
 const minFps = 0;
 const maxFps = 60;
@@ -16,13 +15,13 @@ let table = {};
 let svg = {};
 let legend = {};
 let graphData = [];
-let sessionData = {};
+const sessionData = {};
 let roomInfo = {};
-let avgData = {};
 let toolTip = null;
 let uName = null;
 let uToken = null;
 let attempts = 0;
+let savedParams = {};
 
 const rc = d3.scale.ordinal();
 const x = d3.time.scale()
@@ -100,22 +99,28 @@ function grabParams() {
   return params;
 }
 
-function refreshTable() {
-	table.clear();
+function refreshTable(pageIndex) {
+  table.clear();
   if (sessionData.sessions) {
     sessionData.sessions.forEach(session => {
-      table.row.add([
-        session.userId,
-        session.deviceType,
-        session.platform === 8 ? "iOS" : session.platform === 11 ? "Android" : "Unknown",
-        session.startTime,
-        session.id,
-        session.roomDefId,
-        session.buildType === 0 ? "Debug" : "Release",
-      ]);
+      if (!session || !session.userId) {
+        table.row.add(["", "", "", "", "", "", ""]);
+      }
+      else {
+        table.row.add([
+          session.userId,
+          session.deviceType,
+          session.platform === 8 ? "iOS" : session.platform === 11 ? "Android" : "Unknown",
+          session.startTime,
+          session.id,
+          session.roomDefId,
+          session.buildType === 0 ? "Debug" : "Release",
+        ]);
+      }
     });
   }
-	table.draw();
+ table.draw();
+ table.page(pageIndex).draw(false);
 }
 
 function getMemoryRange() {
@@ -406,31 +411,6 @@ function updateChart() {
   renderLegend();
 }
 
-function updateSelectedAggregates() {
-  const avgs = [];
-  const selectedIds = table.rows({selected: true}).data().pluck(4);
-  let i = 0;
-  let j = 0;
-  for (i; i < selectedIds.length; i++){
-    for (j = 0; j < avgData.averages.length; j++){
-      if (selectedIds[i] === avgData.averages[j].id) {
-        avgs.push(avgData.averages[j]);
-        break;
-      }
-    }
-  }
-  $("#saCount").html(selectedIds.length);
-  let totalAvg = d3.mean(avgs, a => {
-    return a.fps;
-  });
-  $("#saFps").html(Math.floor(totalAvg));
-
-  totalAvg = d3.mean(avgs, a => {
-    return a.memory;
-  });
-  $("#saMem").html(Math.floor(totalAvg));
-}
-
 function getFail(j, status, error) {
 	console.log(j);
 	console.log(status);
@@ -494,50 +474,70 @@ function authenticate(c) {
   }
 }
 
-// Callbacks
-function getAvgSuccess(data, status, j){
-	avgData = JSON.parse(data);
-	if (avgData) {
-    $("#taCount").html(avgData.averages.length);
-    let totalAvg = d3.mean(avgData.averages, a => {
-      return a.fps;
-    });
-    $("#taFps").html(Math.floor(totalAvg));
+function updateAverages(bySelection) {
+  let t = 0;
+  let fa = 0;
+  let ma = 0;
+  if (bySelection) {
+    // TODO
+    const avgs = [];
+    const selectedIds = table.rows({selected: true}).data().pluck(4);
+    let i = 0;
+    let j = 0;
+    for (i; i < selectedIds.length; i++){
+      for (j = 0; j < sessionData.sessions.length; j++){
+        if (selectedIds[i] === sessionData.sessions[j].id) {
+          avgs.push(sessionData.sessions[j]);
+          break;
+        }
+      }
+    }
+    t = avgs.length;
+    fa = t ? Math.floor(d3.mean(avgs, a => a.avgFps)) : 0;
+    ma = t ? Math.floor(d3.mean(avgs, a => a.avgMem)) : 0;
+  }
+  else {
+    t = sessionData.sessions.length;
+    fa = t ? sessionData.avgFps : 0;
+    ma = t ? sessionData.avgMem : 0;
+  }
 
-    totalAvg = d3.mean(avgData.averages, a => {
-      return a.memory;
-    });
-    $("#taMem").html(Math.floor(totalAvg));
+  if (bySelection) {
+    $("#saCount").html(t);
+    $("#saFps").html(fa);
+    $("#saMem").html(ma);
 	}
+  else {
+    $("#taCount").html(t);
+    $("#taFps").html(fa);
+    $("#taMem").html(ma);
+  }
 }
 
-function getAverages() {
-  const params = sessionData.sessions.map(e => {
-    return { "id": e.id };
-  });
-	const jstr = JSON.stringify({
-		"username": uName,
-		"authToken": uToken,
-		"params": {
-      "sessions": params,
-		}});
+function getSuccess(data, status, j) {
+  const dp = JSON.parse(data);
+  const d = dp.results;
+  sessionData.avgFps = d.avgFps;
+  sessionData.avgMem = d.avgMem;
+  sessionData.sessions = new Array(d.fullCount);
+  sessionData.sessions.fill({});
 
-	$.ajax({
-    "type": "POST",
-    "url": avgUrl,
-    "data": jstr,
-  }).done((data, status, jqXHR) => {
-    getAvgSuccess(data, status, jqXHR);
-  }).fail((jqXHR, textStatus, errorThrown) => {
-    getFail(jqXHR, textStatus, errorThrown);
-	});
-}
+  let curPage = 0;
+  let idx = 0;
+  for (let i = 0; i < d.pages.length; i++) {
+    curPage = d.pages[i];
+    for (let j = 0; j < d.pageLength; j++) {
+      if (j + (i * d.pageLength) >= d.sessions.length) {
+        break;
+      }
+      idx = j + (curPage * d.pageLength);
+      sessionData.sessions[idx] = d.sessions[j + (i * d.pageLength)];
+    }
+  }
 
-function getSuccess(data, status, j){
-	sessionData = JSON.parse(data);
 	if (sessionData) {
-		refreshTable();
-    getAverages();
+		refreshTable(table.page());
+    updateAverages(false);
 	}
 }
 
@@ -548,7 +548,6 @@ function dataRequestCallback(wasSuccess, data, error, status) {
         return e;
       });
     updateChart();
-    updateSelectedAggregates();
   }
 }
 
@@ -578,23 +577,42 @@ function handleLogin() {
   });
 }
 
-function handleSearch() {
-  const params = grabParams();
+function handleSearch(newSearch) {
+  if (newSearch || !savedParams) {
+    savedParams = grabParams();
+  }
+  else {
+    table.off("page");
+  }
+
+  const page = table.page();
+  const pages = [];
+  if (page > 0) {
+    pages.push(page - 1);
+  }
+  pages.push(page);
+  if (page < table.page.info().pages - 1) {
+    pages.push(page + 1);
+  }
+
 	const jstr = JSON.stringify({
 		"username": uName,
 		"authToken": uToken,
 		"params": {
       "constraints": {
-        "user": params.username,
-        "deviceType": params.deviceType,
-        "platform": params.platform,
-        "buildType": params.buildType,
-        "buildVersion": params.buildVersion,
-        "startTime": params.startTime,
-        "endTime": params.endTime,
-        "roomDefId": params.room,
+        "pages": pages,
+        "pageLength": table.page.len(),
+        "user": savedParams.username,
+        "deviceType": savedParams.deviceType,
+        "platform": savedParams.platform,
+        "buildType": savedParams.buildType,
+        "buildVersion": savedParams.buildVersion,
+        "startTime": savedParams.startTime,
+        "endTime": savedParams.endTime,
+        "roomDefId": savedParams.room,
       },
-		}});
+		},
+  });
 
 	$.ajax({
     "type": "POST",
@@ -602,8 +620,14 @@ function handleSearch() {
     "data": jstr,
   }).done((data, status, jqXHR) => {
     getSuccess(data, status, jqXHR);
+    if (!newSearch) {
+      table.on("page", () => handleSearch(false));
+    }
   }).fail((jqXHR, textStatus, errorThrown) => {
     getFail(jqXHR, textStatus, errorThrown);
+    if (!newSearch) {
+      table.on("page", () => handleSearch(false));
+    }
 	});
 }
 
@@ -636,9 +660,10 @@ function handleTableSelect(e, dt, type, indices) {
     selectedUsers = table.rows(indices).data().pluck(0)[0];
     requestSessionData(selectedIds, selectedUsers);
   }
+  updateAverages(true);
 }
 function handleTableDeSelect(e, dt, type, indices) {
-  updateSelectedAggregates();
+  updateAverages(true);
 }
 
 $(document).ready(() => {
@@ -661,15 +686,21 @@ $(document).ready(() => {
       timeFormat: "HH:mm:ss",
     });
 		$("#searchButton").on("click", () => {
-			handleSearch();
+			handleSearch(true);
 		});
     table = $("#results").DataTable({
+        order: [],
         searching: false,
         select: true,
+        lengthChange: false,
+        pageLength: 2,
     });
 
     table.on("select", handleTableSelect);
     table.on("deselect", handleTableDeSelect);
+    table.on("page", () => {
+      handleSearch(false);
+    });
 
     authenticate(attempts);
 });
