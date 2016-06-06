@@ -10,6 +10,7 @@
     "datatables.net-select-dt": "^1.1.2",
     "jquery-ui": "^1.11.4",
     "jqueryui-timepicker-addon": "^1.6.3",
-    "randomcolor": "randomColor#^0.4.4"
+    "randomcolor": "randomColor#^0.4.4",
+    "spin.js": "spin-js#^2.0.1"
   }
 }

@@ -52,5 +52,6 @@
   "globals": {
     "d3": true,
     "randomColor": true,
+    "Spinner": true,
   },
 }

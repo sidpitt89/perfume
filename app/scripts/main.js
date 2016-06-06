@@ -22,6 +22,12 @@ let uName = null;
 let uToken = null;
 let attempts = 0;
 let savedParams = {};
+let tableSpinner = null;
+let chartSpinner = null;
+let authSpinner = null;
+let tableLoading = false;
+let chartLoading = false;
+let authenticating = false;
 
 const rc = d3.scale.ordinal();
 const x = d3.time.scale()
@@ -54,6 +60,95 @@ const memLine = d3.svg.line()
       return yMem(d.memoryUsed);
     });
 const formatDate = d3.time.format("%Y-%m-%d %H:%M:%S");
+
+const tableSpinnerOptions = {
+  lines: 15,
+  length: 7,
+  width: 3,
+  radius: 10,
+  scale: 1.0,
+  corners: 0,
+  opacity: 0.40,
+  rotate: 0,
+  direction: 1,
+  speed: 1.7,
+  trail: 58,
+  top: "50%",
+  left: "50%",
+};
+
+const chartSpinnerOptions = {
+  lines: 17,
+  length: 0,
+  width: 9,
+  radius: 84,
+  scale: 1.0,
+  corners: 0,
+  opacity: 0.25,
+  rotate: 0,
+  direction: 1,
+  speed: 1.7,
+  trail: 68,
+  top: `${(height / 2) + 25}px`,
+  left: `${(width / 2) + 100}px`,
+};
+
+const authSpinnerOptions = {
+  lines: 13,
+  length: 0,
+  width: 3,
+  radius: 9,
+  scale: 1.0,
+  corners: 0,
+  opacity: 0.50,
+  rotate: 0,
+  direction: 1,
+  speed: 1.7,
+  trail: 68,
+};
+
+function toggleSpinner(table) {
+  const target = table ? $("#results")[0] : $("#gc")[0];
+  let loading = false;
+  if (table) {
+    loading = tableLoading = !tableLoading;
+  }
+  else {
+    loading = chartLoading = !chartLoading;
+  }
+
+  if (table && !tableSpinner) {
+    tableSpinner = new Spinner(tableSpinnerOptions).spin(target);
+  }
+  else if (!table && !chartSpinner) {
+    chartSpinner = new Spinner(chartSpinnerOptions).spin(target);
+  }
+  else {
+    const spinner = table ? tableSpinner : chartSpinner;
+    if (loading) {
+      spinner.spin(target);
+    }
+    else {
+      spinner.stop();
+    }
+  }
+}
+
+function toggleAuthSpinner() {
+  const target = $(".modal-content")[0];
+  authenticating = !authenticating;
+  if (!authSpinner) {
+    authSpinner = new Spinner(authSpinnerOptions).spin(target);
+  }
+  else {
+    if (authenticating) {
+      authSpinner.spin(target);
+    }
+    else {
+      authSpinner.stop();
+    }
+  }
+}
 
 function getTitleText() {
   if (!currentInfo) {
@@ -461,6 +556,7 @@ function setUp() {
 function authenticate(c) {
   if (!uName || !uToken) {
     if (c > 0) {
+      toggleAuthSpinner();
       $("#vText").addClass("error").html("Login Failed");
     }
     else {
@@ -468,6 +564,7 @@ function authenticate(c) {
     }
   }
   else {
+    toggleAuthSpinner();
     $("#vText").removeClass("error").addClass("success").html("Success!");
     $("#vm").hide(1000);
     setUp();
@@ -542,6 +639,7 @@ function getSuccess(data, status, j) {
 }
 
 function dataRequestCallback(wasSuccess, data, error, status) {
+  toggleSpinner(false);
   if (wasSuccess) {
     graphData = JSON.parse(data).intervals.map(e => {
         e.ts = formatDate.parse(e.ts);
@@ -560,6 +658,8 @@ function handleLogin() {
       "password": params.lPass,
     },
   });
+
+  toggleAuthSpinner();
 
   $.ajax({
     "type": "POST",
@@ -614,17 +714,20 @@ function handleSearch(newSearch) {
 		},
   });
 
+  toggleSpinner(true);
 	$.ajax({
     "type": "POST",
     "url": searchUrl,
     "data": jstr,
   }).done((data, status, jqXHR) => {
     getSuccess(data, status, jqXHR);
+    toggleSpinner(true);
     if (!newSearch) {
       table.on("page", () => handleSearch(false));
     }
   }).fail((jqXHR, textStatus, errorThrown) => {
     getFail(jqXHR, textStatus, errorThrown);
+    toggleSpinner(true);
     if (!newSearch) {
       table.on("page", () => handleSearch(false));
     }
@@ -639,6 +742,7 @@ function requestSessionData(id, user) {
         "sessionId": id,
 		}});
 
+  toggleSpinner(false);
 	$.ajax({
     "type": "POST",
     "url": statsUrl,
@@ -693,13 +797,18 @@ $(document).ready(() => {
         searching: false,
         select: true,
         lengthChange: false,
-        pageLength: 2,
+        pageLength: 10,
+        processing: true,
     });
 
     table.on("select", handleTableSelect);
     table.on("deselect", handleTableDeSelect);
     table.on("page", () => {
       handleSearch(false);
+    });
+
+    $("#spinTest").on("click", () => {
+      toggleSpinner(false);
     });
 
     authenticate(attempts);
