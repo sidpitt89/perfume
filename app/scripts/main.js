@@ -4,12 +4,18 @@ const loginUrl = "http://localhost:3000/auth/logIn";
 const searchUrl = "http://localhost:3000/perf/search";
 const statsUrl = "http://localhost:3000/perf/getIntervalStats";
 const roomUrl = "http://localhost:3000/perf/getRoomInfo";
-const minFps = 0;
-const maxFps = 60;
 const currentInfo = {"session": "None", "user": "None"};
-const margin = {top: 5, right: 50, bottom: 20, left: 50},
-  width = 960 - margin.left - margin.right,
+const margin = {top: 5, right: 70, bottom: 20, left: 50},
+  width = 980 - margin.left - margin.right,
   height = 500 - margin.top - margin.bottom;
+
+
+const platforms = {
+  1: "OSX Editor",
+  7: "Win. Editor",
+  8: "iOS",
+  11: "Android",
+};
 
 let table = {};
 let svg = {};
@@ -17,6 +23,7 @@ let legend = {};
 let graphData = [];
 const sessionData = {};
 let roomInfo = {};
+const roomColors = {};
 let toolTip = null;
 let uName = null;
 let uToken = null;
@@ -33,9 +40,11 @@ const rc = d3.scale.ordinal();
 const x = d3.time.scale()
     .range([0, width]);
 const y = d3.scale.linear()
-    .range([height, 0]);
+    .range([height, 0])
+    .nice();
 const yMem = d3.scale.linear()
-    .range([height, 0]);
+    .range([height, 0])
+    .nice();
 const xAxis = d3.svg.axis()
     .scale(x)
     .orient("bottom");
@@ -170,6 +179,10 @@ function toolTipText(interval) {
 function roomSuccess(data) {
   roomInfo = JSON.parse(data).rooms;
   $.each(roomInfo, (i, room) => {
+    roomColors[room.id] = randomColor({
+      luminosity: "bright",
+      seed: room.id,
+    });
     $("#room").append($("<option>", {
         value: room.id,
         text: room.name,
@@ -202,10 +215,15 @@ function refreshTable(pageIndex) {
         table.row.add(["", "", "", "", "", "", ""]);
       }
       else {
+        let platform = platforms[session.platform];
+        if (!platform) {
+          platform = "Unknown";
+        }
+
         table.row.add([
           session.userId,
           session.deviceType,
-          session.platform === 8 ? "iOS" : session.platform === 11 ? "Android" : "Unknown",
+          platform,
           session.startTime,
           session.id,
           session.roomDefId,
@@ -218,16 +236,36 @@ function refreshTable(pageIndex) {
  table.page(pageIndex).draw(false);
 }
 
+function getFpsRange() {
+  // Default to arbitrary range for empty charts.
+  if (!graphData || graphData.length === 0) {
+    return [0, 60];
+  }
+
+  const range = d3.extent(graphData, d => {
+    return d.fpsAvg;
+  });
+  const mean = d3.mean(graphData, d => {
+    return d.fpsAvg;
+  });
+
+  return [d3.max([0, mean - range[0]]), range[1] + (mean * 0.4)];
+}
+
 function getMemoryRange() {
   // Default to arbitrary range for empty charts.
   if (!graphData || graphData.length === 0) {
     return [0, 500];
   }
 
-  const max = d3.max(graphData, d => {
+  const range = d3.extent(graphData, d => {
     return d.memoryUsed;
   });
-  return [0, max + 20];
+  const mean = d3.mean(graphData, d => {
+    return d.memoryUsed;
+  });
+
+  return [d3.max([0, mean - range[0]]), range[1] + (mean * 0.65)];
 }
 
 function setUpChart() {
@@ -238,7 +276,7 @@ function setUpChart() {
 	x.domain(d3.extent(graphData, d => {
     return d.ts;
   }));
-  y.domain([minFps, maxFps]);
+  y.domain(getFpsRange());
   yMem.domain(getMemoryRange());
 
   svg.append("g")
@@ -272,7 +310,7 @@ function setUpChart() {
       .attr("transform", `translate(${width}, 0)`)
       .call(yAxisRight)
     .append("text")
-      .attr("transform", `rotate(90),translate(${(height / 2) + 30}, -50)`)
+      .attr("transform", `rotate(90),translate(${(height / 2)}, -60)`)
       .attr("y", 6)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
@@ -280,7 +318,7 @@ function setUpChart() {
 
   svg.select(".y.axis.mem")
     .append("rect")
-      .attr("transform", `rotate(90),translate(${(height / 2) + 35}, -50)`)
+      .attr("transform", `rotate(90),translate(${(height / 2) + 5}, -60)`)
       .attr("y", 6)
       .attr("width", 10)
       .attr("height", 10)
@@ -352,22 +390,22 @@ function getRelevantRooms() {
   return rooms;
 }
 
-function genRoomColors(n) {
-  const c = randomColor({
-    luminosity: "bright",
-    count: n,
+function genRoomColors(rooms) {
+  // let i = 0;
+  const c = rooms.map(r => {
+    return roomColors[r] ? roomColors[r] : randomColor();
   });
 
   // Set every other color to the compliment of its predecessor so the
   // amount of similar neighbors is reduced.
-  let prev = "";
-  for (let i = 1; i < n; i += 2) {
-    if (i >= n) {
-      break;
-    }
-    prev = `0x${c[i - 1].slice(-6)}`;
-    c[i] = `#${(`000000${("0xFFFFFF" ^ prev).toString(16)}`).slice(-6)}`;
-  }
+  // let prev = "";
+  // for (i = 1; i < rooms.length; i += 2) {
+  //   if (i >= rooms.length) {
+  //     break;
+  //   }
+  //   prev = `0x${c[i - 1].slice(-6)}`;
+  //   c[i] = `#${(`000000${("0xFFFFFF" ^ prev).toString(16)}`).slice(-6)}`;
+  // }
   return c;
 }
 
@@ -460,6 +498,7 @@ function updateChart() {
   x.domain(d3.extent(graphData, d => {
     return d.ts;
   }));
+  y.domain(getFpsRange());
   yMem.domain(getMemoryRange());
   svg.select(".x.axis")
       .transition().duration(500).ease("sin-in-out")
@@ -469,9 +508,13 @@ function updateChart() {
       .transition().duration(500).ease("sin-in-out")
       .call(yAxisRight);
 
+  svg.select(".y.axis.fps")
+      .transition().duration(500).ease("sin-in-out")
+      .call(yAxis);
+
   const rr = getRelevantRooms();
   rc.domain(rr);
-  rc.range(genRoomColors(rr.length));
+  rc.range(genRoomColors(rr));
   svg.select("#bg").selectAll(".room").remove();
   svg.select("#bg").selectAll(".room")
     .data(getRoomChanges())
@@ -795,6 +838,7 @@ $(document).ready(() => {
     table = $("#results").DataTable({
         order: [],
         searching: false,
+        ordering: false,
         select: true,
         lengthChange: false,
         pageLength: 10,
