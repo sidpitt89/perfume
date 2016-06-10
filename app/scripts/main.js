@@ -249,7 +249,7 @@ function getFpsRange() {
     return d.fpsAvg;
   });
 
-  return [d3.max([0, mean - range[0]]), range[1] + (mean * 0.4)];
+  return [d3.max([0, range[0] - (mean * 0.6)]), range[1] + (mean * 0.4)];
 }
 
 function getMemoryRange() {
@@ -265,7 +265,7 @@ function getMemoryRange() {
     return d.memoryUsed;
   });
 
-  return [d3.max([0, mean - range[0]]), range[1] + (mean * 0.65)];
+  return [d3.max([0, range[0] - (mean * 0.35)]), range[1] + (mean * 0.65)];
 }
 
 function setUpChart() {
